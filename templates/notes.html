@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "icons.html" import icon %}
+{% block title %}My Notes{% endblock %}
+{% block content %}
+<h1>My Notes</h1>
+<form class="card dropzone" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+  {{ icon('upload') }}
+  <p><b>Drop a file here</b> or choose one from your computer</p>
+  <p class="muted small-t">PDF or TXT, up to 10 MB</p>
+  <div class="row center"><input type="file" id="file" name="file" accept=".pdf,.txt" required>
+  <button class="btn" type="submit">Upload</button></div>
+</form>
+<h2>Uploaded notes ({{ notes|length }})</h2>
+{% if notes %}
+<div class="card">
+  <table>
+    <tr><th>File name</th><th>Uploaded</th><th>Actions</th></tr>
+    {% for n in notes %}
+    <tr>
+      <td><span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span> {{ n.filename }}</td><td>{{ n.uploaded_at }}</td>
+      <td class="row">
+        <a class="btn small" href="{{ url_for('open_note', nid=n.id) }}">Open</a>
+        <form action="{{ url_for('delete_note', nid=n.id) }}" method="post" data-confirm="Delete this note?">
+          <button class="btn small danger" type="submit">Delete</button></form>
+      </td>
+    </tr>{% endfor %}
+  </table>
+</div>
+{% else %}<div class="card empty">{{ icon('file') }}<p>No notes yet. Upload your first PDF or TXT file above.</p></div>{% endif %}
+{% endblock %}

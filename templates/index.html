@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "icons.html" import icon %}
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>Welcome to StudyLens</h1>
+    <p>Upload your notes, find any topic in seconds, and practise with quizzes before the exam.</p>
+  </div>
+  <a class="btn light" href="{{ url_for('notes') }}">{{ icon('upload') }}Upload notes</a>
+</section>
+
+<div class="grid">
+  <div class="card stat"><span class="chip">{{ icon('file') }}</span><span class="num">{{ notes }}</span>Notes uploaded</div>
+  <div class="card stat"><span class="chip">{{ icon('quiz') }}</span><span class="num">{{ quizzes }}</span>Quizzes attempted</div>
+  <div class="card stat"><span class="chip">{{ icon('chart') }}</span><span class="num">{% if last %}{{ last.score }}/{{ last.total }}{% else %}-{% endif %}</span>Last quiz score</div>
+</div>
+
+<h2>Jump in</h2>
+<div class="grid tiles">
+  <a class="card link" href="{{ url_for('notes') }}"><span class="chip">{{ icon('file') }}</span><b>My Notes</b>Upload and manage PDF or TXT notes.</a>
+  <a class="card link" href="{{ url_for('search') }}"><span class="chip">{{ icon('search') }}</span><b>Search Notes</b>Find a keyword inside your notes.</a>
+  <a class="card link" href="{{ url_for('easylearn') }}"><span class="chip">{{ icon('bulb') }}</span><b>EasyLearn</b>Summary and exam answer for a topic.</a>
+  <a class="card link" href="{{ url_for('quiz') }}"><span class="chip">{{ icon('quiz') }}</span><b>Quick Quiz</b>Test yourself with 5 questions.</a>
+</div>
+
+<h2>Recent notes</h2>
+{% if recent %}
+<div class="card flush">
+  {% for n in recent %}<a class="list-row" href="{{ url_for('open_note', nid=n.id) }}">
+    <span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span><span class="grow">{{ n.filename }}</span><span class="muted small-t">{{ n.uploaded_at }}</span></a>{% endfor %}
+</div>
+{% else %}<div class="card empty">{{ icon('file') }}<p>No notes yet. Upload your first file to get started.</p></div>{% endif %}
+{% endblock %}

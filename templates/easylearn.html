@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "icons.html" import icon %}
+{% block title %}EasyLearn{% endblock %}
+{% block content %}
+<h1>EasyLearn</h1>
+<form class="card row" method="get" id="easylearnForm">
+  <input type="text" name="topic" value="{{ topic }}" placeholder="Enter a topic, e.g. normalization" required>
+  <button class="btn" type="submit">Generate</button>
+</form>
+{% if all_notes %}
+<div class="card note-selector">
+  <div class="note-selector-header" id="noteFilterToggle">
+    {{ icon('file') }}
+    <b>Select notes to use</b>
+    <span class="muted small-t">({% if selected_ids %}{{ selected_ids|length }} selected{% else %}using all notes{% endif %})</span>
+    <span class="toggle-arrow" id="toggleArrow">▸</span>
+  </div>
+  <div class="note-selector-body" id="noteFilterBody">
+    <div class="note-selector-actions">
+      <button type="button" class="btn small" id="selectAllNotes">Select all</button>
+      <button type="button" class="btn small danger" id="clearAllNotes">Clear all</button>
+    </div>
+    <div class="note-checkboxes">
+      {% for n in all_notes %}
+      <label class="note-check-item">
+        <input type="checkbox" name="note_ids" value="{{ n.id }}" form="easylearnForm"
+          {% if n.id in selected_ids or not selected_ids %}checked{% endif %}>
+        <span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span>
+        <span class="grow">{{ n.filename }}</span>
+        <span class="muted small-t">{{ n.uploaded_at }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+<p class="note">Note: EasyLearn uses simple text processing, not AI. It picks the most relevant sentences from your uploaded notes, so results depend on how well your notes cover the topic.</p>
+{% if out %}
+  {% if out.found %}
+  <div class="card"><h2>Simple explanation</h2><p>{{ out.explanation }}</p></div>
+  <div class="card"><h2>Short summary</h2><p>{{ out.summary }}</p></div>
+  <div class="card"><h2>Important points for revision</h2><ul>{% for p in out.points %}<li>{{ p }}</li>{% endfor %}</ul></div>
+  <div class="card"><h2>5-mark exam answer</h2>
+    <p>{{ out.answer.intro }}</p><ul>{% for p in out.answer.body %}<li>{{ p }}</li>{% endfor %}</ul>
+    <p>{{ out.answer.conclusion }}</p></div>
+  <p class="muted">Sources: {{ out.sources|join(', ') }}</p>
+  {% else %}
+  <p class="card muted">Nothing found for "{{ topic }}". Upload notes that cover this topic in My Notes, or try another keyword.</p>
+  {% endif %}
+{% endif %}
+{% endblock %}

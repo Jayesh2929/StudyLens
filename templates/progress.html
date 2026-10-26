@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "icons.html" import icon %}
+{% block title %}Progress{% endblock %}
+{% block content %}
+<h1>My Progress</h1>
+<p class="sub">Your notes and quiz results at a glance.</p>
+<div class="grid">
+  <div class="card stat"><span class="chip">{{ icon('file') }}</span><span class="num">{{ notes }}</span>Notes uploaded</div>
+  <div class="card stat"><span class="chip">{{ icon('quiz') }}</span><span class="num">{{ count }}</span>Quizzes attempted</div>
+  <div class="card stat"><span class="chip">{{ icon('chart') }}</span><span class="num">{% if count %}{{ avg|int }}%{% else %}-{% endif %}</span>Average score</div>
+  <div class="card stat"><span class="chip">{{ icon('bulb') }}</span><span class="num">{% if count %}{{ best|int }}%{% else %}-{% endif %}</span>Best score</div>
+</div>
+<h2>Latest quiz scores</h2>
+{% if attempts %}
+<div class="card">
+  <div class="chart">
+    {% for a in attempts|reverse %}
+    <div class="col"><b>{{ a.score }}/{{ a.total }}</b>
+      <div class="colbar"><div class="fill" style="height: {{ (a.score / a.total * 100)|round }}%"></div></div>
+      <span>{{ a.taken_at.split(',')[0] }}</span></div>{% endfor %}
+  </div>
+</div>
+{% else %}<div class="card empty">{{ icon('quiz') }}<p>No quizzes yet. Take your first one in Quick Quiz.</p></div>{% endif %}
+{% endblock %}
