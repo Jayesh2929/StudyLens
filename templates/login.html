@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StudyLens - Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#f6f5fb; --card:#fff; --ink:#1c1b3a; --muted:#6b6a8a; --line:#e8e6f5; --accent:#4338ca; --accent-d:#3730a3; --tint:#eceafd; --hl:#fde68a; --ok:#15803d; --okbg:#dcfce7; --bad:#b91c1c; --badbg:#fee2e2; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; display: flex; background: var(--bg); font-family: "Plus Jakarta Sans","Segoe UI",system-ui,sans-serif; color: var(--ink); }
+
+    /* ── Left decorative panel ── */
+    .login-side {
+      flex: 0 0 480px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 24px;
+      background: linear-gradient(135deg, #312e81, #4338ca 55%, #6366f1);
+      color: #fff; padding: 60px 48px; position: relative; overflow: hidden;
+    }
+    .login-side::before { content: ''; position: absolute; width: 500px; height: 500px; border-radius: 50%; background: rgba(255,255,255,.04); top: -180px; right: -140px; }
+    .login-side::after  { content: ''; position: absolute; width: 320px; height: 320px; border-radius: 50%; background: rgba(255,255,255,.03); bottom: -80px; left: -60px; }
+    .login-side .logo { display: flex; align-items: center; gap: 14px; font-size: 2rem; font-weight: 800; letter-spacing: -.03em; z-index: 1; }
+    .login-side .logo svg { filter: drop-shadow(0 2px 10px rgba(0,0,0,.25)); }
+    .login-side h2 { font-size: 1.6rem; font-weight: 700; line-height: 1.3; text-align: center; z-index: 1; }
+    .login-side p { color: #c7d2fe; text-align: center; max-width: 30ch; line-height: 1.6; z-index: 1; }
+    .login-side .features { display: flex; flex-direction: column; gap: 14px; z-index: 1; margin-top: 12px; }
+    .login-side .features span { display: flex; align-items: center; gap: 10px; font-size: .95rem; font-weight: 500; color: #e0e7ff; }
+    .login-side .features span::before { content: '✓'; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,.15); font-size: .75rem; flex: none; }
+
+    /* ── Right form panel ── */
+    .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+    .login-box { width: 100%; max-width: 420px; }
+    .login-box .tab-bar { display: flex; gap: 0; background: var(--tint); border-radius: 14px; padding: 4px; margin-bottom: 28px; }
+    .login-box .tab-bar button {
+      flex: 1; border: 0; padding: 12px 0; border-radius: 11px; background: transparent; font: inherit;
+      font-weight: 600; color: var(--muted); cursor: pointer; transition: all .2s;
+    }
+    .login-box .tab-bar button.active { background: var(--card); color: var(--accent); box-shadow: 0 1px 4px rgba(40,30,120,.1); }
+    .login-box h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 4px; letter-spacing: -.02em; }
+    .login-box .sub { color: var(--muted); margin-bottom: 24px; font-size: .95rem; }
+
+    /* form fields */
+    .field { margin-bottom: 18px; position: relative; }
+    .field label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .field input {
+      width: 100%; padding: 13px 14px 13px 44px; border: 1.5px solid var(--line); border-radius: 12px;
+      font: inherit; font-size: .95rem; background: #fff; color: var(--ink); transition: border-color .2s, box-shadow .2s;
+    }
+    .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #c7d2fe; outline: none; }
+    .field input.invalid { border-color: var(--bad); box-shadow: 0 0 0 3px #fecaca; }
+    .field input.valid { border-color: var(--ok); }
+    .field .icon { position: absolute; left: 14px; top: 36px; width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
+    .field .toggle-pw { position: absolute; right: 14px; top: 36px; width: 20px; height: 20px; color: var(--muted); cursor: pointer; background: none; border: 0; padding: 0; }
+    .field .error-msg { display: none; font-size: .78rem; color: var(--bad); margin-top: 4px; font-weight: 500; }
+    .field input.invalid ~ .error-msg { display: block; }
+    .pw-strength { height: 4px; border-radius: 4px; background: var(--line); margin-top: 6px; overflow: hidden; }
+    .pw-strength .bar { height: 100%; border-radius: 4px; width: 0; transition: width .3s, background .3s; }
+    .pw-strength-text { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+
+    .submit-btn {
+      width: 100%; padding: 14px; border: 0; border-radius: 12px; background: var(--accent); color: #fff;
+      font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background .2s, transform .1s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .submit-btn:hover { background: var(--accent-d); }
+    .submit-btn:active { transform: scale(.98); }
+    .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .divider { display: flex; align-items: center; gap: 14px; margin: 20px 0; color: var(--muted); font-size: .85rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+    .flash-msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 18px; font-weight: 500; font-size: .9rem; animation: slideIn .3s ease; }
+    .flash-msg.success { background: var(--okbg); color: #14532d; }
+    .flash-msg.error   { background: var(--badbg); color: #7f1d1d; }
+
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── mobile ── */
+    @media (max-width: 900px) {
+      .login-side { display: none; }
+      .login-main { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Decorative left panel -->
+  <div class="login-side">
+    <div class="logo">
+      <svg viewBox="0 0 40 40" width="48" height="48"><rect width="40" height="40" rx="11" fill="rgba(255,255,255,.15)"/><circle cx="18" cy="18" r="7.5" fill="none" stroke="#fff" stroke-width="2.8"/><path d="M23.5 23.5l6 6" stroke="#fde68a" stroke-width="3.5" stroke-linecap="round"/></svg>
+      StudyLens
+    </div>
+    <h2>Your smart study<br>companion</h2>
+    <p>Upload notes, search instantly, learn faster, and ace your exams.</p>
+    <div class="features">
+      <span>Upload &amp; manage PDF / TXT notes</span>
+      <span>Instant full-text search</span>
+      <span>AI-powered EasyLearn summaries</span>
+      <span>Auto-generated quizzes</span>
+      <span>Track your progress</span>
+    </div>
+  </div>
+
+  <!-- Login / Register form -->
+  <div class="login-main">
+    <div class="login-box">
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button id="tabLogin" class="{{ 'active' if mode != 'register' }}" onclick="switchTab('login')">Sign In</button>
+        <button id="tabRegister" class="{{ 'active' if mode == 'register' }}" onclick="switchTab('register')">Create Account</button>
+      </div>
+
+      <!-- Flash messages -->
+      {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in msgs %}
+          <div class="flash-msg {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <!-- LOGIN FORM -->
+      <div id="loginPane" style="{{ 'display:none' if mode == 'register' else '' }}">
+        <h1>Welcome back</h1>
+        <p class="sub">Sign in to continue to your study dashboard.</p>
+        <form id="loginForm" method="POST" action="{{ url_for('login') }}" novalidate>
+          <input type="hidden" name="action" value="login">
+          <div class="field">
+            <label for="loginEmail">Email address</label>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z" rx="2"/><path d="M4 4l8 8 8-8"/></svg>
+            <input type="email" id="loginEmail" name="email" placeholder="you@example.com" autocomplete="email" required>
+            <div class="error-msg" id="loginEmailErr">Please enter a valid email address.</div>
+          </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="loginPassword" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button type="button" class="toggle-pw" onclick="togglePw('loginPassword', this)" aria-label="Toggle password visibility">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <div class="error-msg" id="loginPasswordErr">Password is required.</div>
+          </div>
+          <button type="submit" class="submit-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+            Sign In
+          </button>
+        </form>
+        <div class="divider">or</div>
+        <p style="text-align:center; color:var(--muted); font-size:.9rem;">
+          Don't have an account? <a href="#" onclick="switchTab('register'); return false;" style="font-weight:600;">Create one</a>
+        </p>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="registerPane" style="{{ '' if mode == 'register' else 'display:none' }}">
+        <h1>Create account</h1>
+        <p class="sub">Join StudyLens and start studying smarter.</p>
+        <form id="registerForm" method="POST" action="{{ url_for('login') }}" novalidate>
+          <input type="hidden" name="action" value="register">
+          <div class="field">
+            <label for="regName">Full name</label>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="regName" name="name" placeholder="Jayesh Kumar" autocomplete="name" required minlength="2" maxlength="50">
+            <div class="error-msg" id="regNameErr">Name must be 2-50 characters.</div>
+          </div>
+          <div class="field">
+            <label for="regEmail">Email address</label>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z" rx="2"/><path d="M4 4l8 8 8-8"/></svg>
+            <input type="email" id="regEmail" name="email" placeholder="you@example.com" autocomplete="email" required>
+            <div class="error-msg" id="regEmailErr">Please enter a valid email address.</div>
+          </div>
+          <div class="field">
+            <label for="regPassword">Password</label>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="regPassword" name="password" placeholder="Min 8 characters" autocomplete="new-password" required minlength="8">
+            <button type="button" class="toggle-pw" onclick="togglePw('regPassword', this)" aria-label="Toggle password visibility">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <div class="error-msg" id="regPasswordErr">Password must be at least 8 characters.</div>
+            <div class="pw-strength"><div class="bar" id="pwBar"></div></div>
+            <div class="pw-strength-text" id="pwText"></div>
+          </div>
+          <div class="field">
+            <label for="regConfirm">Confirm password</label>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+            <input type="password" id="regConfirm" name="confirm" placeholder="Re-enter your password" autocomplete="new-password" required>
+            <button type="button" class="toggle-pw" onclick="togglePw('regConfirm', this)" aria-label="Toggle password visibility">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <div class="error-msg" id="regConfirmErr">Passwords do not match.</div>
+          </div>
+          <button type="submit" class="submit-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            Create Account
+          </button>
+        </form>
+        <div class="divider">or</div>
+        <p style="text-align:center; color:var(--muted); font-size:.9rem;">
+          Already have an account? <a href="#" onclick="switchTab('login'); return false;" style="font-weight:600;">Sign in</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /* ── Tab switching ── */
+    function switchTab(tab) {
+      document.getElementById('loginPane').style.display   = tab === 'login' ? '' : 'none';
+      document.getElementById('registerPane').style.display = tab === 'register' ? '' : 'none';
+      document.getElementById('tabLogin').className   = tab === 'login' ? 'active' : '';
+      document.getElementById('tabRegister').className = tab === 'register' ? 'active' : '';
+    }
+
+    /* ── Toggle password visibility ── */
+    function togglePw(id, btn) {
+      var inp = document.getElementById(id);
+      var show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      btn.innerHTML = show
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+    }
+
+    /* ── Validation helpers ── */
+    function markField(input, errEl, ok) {
+      input.classList.toggle('invalid', !ok);
+      input.classList.toggle('valid', ok);
+    }
+    function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
+
+    /* ── Password strength meter ── */
+    var pwInput = document.getElementById('regPassword');
+    var pwBar   = document.getElementById('pwBar');
+    var pwText  = document.getElementById('pwText');
+    if (pwInput) {
+      pwInput.addEventListener('input', function () {
+        var v = pwInput.value, score = 0;
+        if (v.length >= 8)  score++;
+        if (v.length >= 12) score++;
+        if (/[A-Z]/.test(v)) score++;
+        if (/[0-9]/.test(v)) score++;
+        if (/[^A-Za-z0-9]/.test(v)) score++;
+        var pct  = [0, 20, 40, 60, 80, 100][score];
+        var col  = ['#e8e6f5','#ef4444','#f97316','#eab308','#22c55e','#15803d'][score];
+        var label= ['','Weak','Fair','Good','Strong','Excellent'][score];
+        pwBar.style.width = pct + '%';
+        pwBar.style.background = col;
+        pwText.textContent = v ? label : '';
+        pwText.style.color = col;
+      });
+    }
+
+    /* ── Live field validation ── */
+    function addLiveValidation(id, errId, testFn) {
+      var inp = document.getElementById(id);
+      if (!inp) return;
+      inp.addEventListener('blur',  function () { if (inp.value) markField(inp, errId, testFn(inp.value)); });
+      inp.addEventListener('input', function () { if (inp.classList.contains('invalid')) markField(inp, errId, testFn(inp.value)); });
+    }
+    addLiveValidation('loginEmail',    'loginEmailErr',    isValidEmail);
+    addLiveValidation('loginPassword', 'loginPasswordErr', function (v) { return v.length > 0; });
+    addLiveValidation('regName',       'regNameErr',       function (v) { return v.trim().length >= 2 && v.trim().length <= 50; });
+    addLiveValidation('regEmail',      'regEmailErr',      isValidEmail);
+    addLiveValidation('regPassword',   'regPasswordErr',   function (v) { return v.length >= 8; });
+    addLiveValidation('regConfirm',    'regConfirmErr',    function (v) { return v === document.getElementById('regPassword').value && v.length > 0; });
+
+    /* ── Re-validate confirm whenever password changes ── */
+    if (pwInput) {
+      pwInput.addEventListener('input', function () {
+        var cf = document.getElementById('regConfirm');
+        if (cf && cf.value) markField(cf, 'regConfirmErr', cf.value === pwInput.value && cf.value.length > 0);
+      });
+    }
+
+    /* ── Form submit validation ── */
+    function validateForm(formId, checks) {
+      var form = document.getElementById(formId);
+      if (!form) return;
+      form.addEventListener('submit', function (e) {
+        var allOk = true;
+        checks.forEach(function (c) {
+          var inp = document.getElementById(c.id);
+          var ok = c.test(inp.value);
+          markField(inp, c.err, ok);
+          if (!ok) allOk = false;
+        });
+        if (!allOk) { e.preventDefault(); document.querySelector('#' + formId + ' .invalid').focus(); }
+      });
+    }
+    validateForm('loginForm', [
+      { id: 'loginEmail',    err: 'loginEmailErr',    test: isValidEmail },
+      { id: 'loginPassword', err: 'loginPasswordErr', test: function (v) { return v.length > 0; } }
+    ]);
+    validateForm('registerForm', [
+      { id: 'regName',     err: 'regNameErr',     test: function (v) { return v.trim().length >= 2 && v.trim().length <= 50; } },
+      { id: 'regEmail',    err: 'regEmailErr',    test: isValidEmail },
+      { id: 'regPassword', err: 'regPasswordErr', test: function (v) { return v.length >= 8; } },
+      { id: 'regConfirm',  err: 'regConfirmErr',  test: function (v) { return v === document.getElementById('regPassword').value && v.length > 0; } }
+    ]);
+
+    /* ── Auto-hide flash messages ── */
+    setTimeout(function () {
+      document.querySelectorAll('.flash-msg').forEach(function (el) { el.style.opacity = '0'; el.style.transform = 'translateY(-8px)'; setTimeout(function () { el.remove(); }, 300); });
+    }, 5000);
+  </script>
+</body>
+</html>

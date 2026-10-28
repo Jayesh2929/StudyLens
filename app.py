@@ -1,9 +1,10 @@
 """StudyLens - Smart Notes and Study Assistant (BCA mini project)."""
-import os, re, random, sqlite3, uuid, json, base64
+import os, re, random, sqlite3, uuid, json, base64, hashlib, functools
 from collections import Counter
 from datetime import datetime
 import fitz  # PyMuPDF, reads PDFs
-from flask import Flask, render_template, request, redirect, url_for, flash, g, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, g, send_from_directory, session
+
 from markupsafe import Markup, escape
 from werkzeug.utils import secure_filename
 
@@ -30,9 +31,15 @@ def close_db(e=None):
     if db: db.close()
 
 def init_db():
-    """Create the two tables automatically on startup."""
+    """Create the tables automatically on startup."""
     db = sqlite3.connect(DB_PATH)
     db.executescript("""
+    CREATE TABLE IF NOT EXISTS users(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS notes(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         filename TEXT NOT NULL,       -- name shown to the student
@@ -46,6 +53,32 @@ def init_db():
         taken_at TEXT NOT NULL);
     """)
     db.commit(); db.close()
+
+# ---------------- Authentication helpers ----------------
+def hash_password(password):
+    """Hash a password with SHA-256 and a random salt."""
+    salt = uuid.uuid4().hex
+    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
+    return salt + ":" + hashed
+
+def verify_password(stored, password):
+    """Verify a password against a stored salt:hash string."""
+    parts = stored.split(":", 1)
+    if len(parts) != 2:
+        return False
+    salt, expected = parts
+    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
+    return hashed == expected
+
+def login_required(view):
+    """Decorator to protect routes — redirects to login if not authenticated."""
+    @functools.wraps(view)
+    def wrapped(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Please sign in to continue.", "error")
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+    return wrapped
 
 # ---------------- Helpers ----------------
 def extract_text(path, ext):
@@ -75,8 +108,97 @@ def highlight(snippet, query):
         safe = re.sub(f"({re.escape(w)})", r"<mark>\1</mark>", safe, flags=re.I)
     return Markup(safe)
 
+# ---------------- Auth pages ----------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    # If already logged in, go to dashboard
+    if "user_id" in session:
+        return redirect(url_for("index"))
+
+    mode = "login"   # default tab
+
+    if request.method == "POST":
+        action = request.form.get("action", "login")
+
+        if action == "register":
+            mode = "register"
+            name = request.form.get("name", "").strip()
+            email = request.form.get("email", "").strip().lower()
+            password = request.form.get("password", "")
+            confirm = request.form.get("confirm", "")
+
+            # ---- Server-side validation ----
+            errors = []
+            if not name or len(name) < 2 or len(name) > 50:
+                errors.append("Name must be between 2 and 50 characters.")
+            if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", email):
+                errors.append("Please enter a valid email address.")
+            if len(password) < 8:
+                errors.append("Password must be at least 8 characters.")
+            if password != confirm:
+                errors.append("Passwords do not match.")
+
+            if errors:
+                for e in errors:
+                    flash(e, "error")
+                return render_template("login.html", mode=mode)
+
+            # Check if email already exists
+            db = get_db()
+            existing = db.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
+            if existing:
+                flash("An account with this email already exists. Please sign in.", "error")
+                return render_template("login.html", mode=mode)
+
+            # Create user
+            db.execute("INSERT INTO users(name, email, password_hash, created_at) VALUES(?,?,?,?)",
+                       (name, email, hash_password(password),
+                        datetime.now().strftime("%d %b %Y, %H:%M")))
+            db.commit()
+            flash("Account created successfully! Please sign in.", "success")
+            mode = "login"
+            return render_template("login.html", mode=mode)
+
+        else:  # action == "login"
+            email = request.form.get("email", "").strip().lower()
+            password = request.form.get("password", "")
+
+            # ---- Server-side validation ----
+            errors = []
+            if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", email):
+                errors.append("Please enter a valid email address.")
+            if not password:
+                errors.append("Password is required.")
+
+            if errors:
+                for e in errors:
+                    flash(e, "error")
+                return render_template("login.html", mode=mode)
+
+            db = get_db()
+            user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+            if not user or not verify_password(user["password_hash"], password):
+                flash("Invalid email or password.", "error")
+                return render_template("login.html", mode=mode)
+
+            # Login success
+            session.clear()
+            session["user_id"] = user["id"]
+            session["user_name"] = user["name"]
+            flash(f"Welcome back, {user['name']}!", "success")
+            return redirect(url_for("index"))
+
+    return render_template("login.html", mode=mode)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been signed out.", "success")
+    return redirect(url_for("login"))
+
 # ---------------- Pages ----------------
 @app.route("/")
+@login_required
 def index():
     db = get_db()
     notes = db.execute("SELECT COUNT(*) c FROM notes").fetchone()["c"]
@@ -86,10 +208,12 @@ def index():
     return render_template("index.html", notes=notes, quizzes=quizzes, recent=recent, last=last, page="home")
 
 @app.route("/notes")
+@login_required
 def notes():
     return render_template("notes.html", notes=all_notes(), page="notes")
 
 @app.route("/notes/upload", methods=["POST"])
+@login_required
 def upload():
     f = request.files.get("file")
     if not f or f.filename == "":
@@ -118,6 +242,7 @@ def upload():
     return redirect(url_for("notes"))
 
 @app.route("/notes/<int:nid>")
+@login_required
 def open_note(nid):
     note = get_db().execute("SELECT * FROM notes WHERE id=?", (nid,)).fetchone()
     if not note:
@@ -125,6 +250,7 @@ def open_note(nid):
     return render_template("note_view.html", note=note, page="notes")
 
 @app.route("/notes/<int:nid>/file")
+@login_required
 def note_file(nid):
     note = get_db().execute("SELECT * FROM notes WHERE id=?", (nid,)).fetchone()
     if not note: return redirect(url_for("notes"))
@@ -132,6 +258,7 @@ def note_file(nid):
                                download_name=note["filename"])
 
 @app.route("/notes/<int:nid>/delete", methods=["POST"])
+@login_required
 def delete_note(nid):
     db = get_db()
     note = db.execute("SELECT * FROM notes WHERE id=?", (nid,)).fetchone()
@@ -143,6 +270,7 @@ def delete_note(nid):
     return redirect(url_for("notes"))
 
 @app.route("/search")
+@login_required
 def search():
     q = request.args.get("q", "").strip()
     selected_ids = request.args.getlist("note_ids", type=int)
@@ -161,6 +289,7 @@ def search():
                            all_notes=all_notes(), selected_ids=selected_ids, page="search")
 
 @app.route("/easylearn")
+@login_required
 def easylearn():
     topic = request.args.get("topic", "").strip()
     selected_ids = request.args.getlist("note_ids", type=int)
@@ -249,6 +378,7 @@ def generate_quiz(text, num_questions=5):
     return questions
 
 @app.route("/quiz", methods=["GET", "POST"])
+@login_required
 def quiz():
     if request.method == "POST":
         action = request.form.get("action", "submit")
@@ -325,6 +455,7 @@ def quiz():
     return render_template("quiz.html", all_notes=all_notes(), setup=True, page="quiz")
 
 @app.route("/progress")
+@login_required
 def progress():
     db = get_db()
     notes = db.execute("SELECT COUNT(*) c FROM notes").fetchone()["c"]
