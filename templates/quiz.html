@@ -1,11 +1,8 @@
 {% extends "base.html" %}
-{% from "icons.html" import icon %}
 {% block title %}Quiz{% endblock %}
 {% block content %}
 <h1>Quick Quiz</h1>
-
 {% if review %}
-  {# ─── Review mode (after submission) ─── #}
   <p class="sub">Here is how you did.</p>
   <div class="card result">
     <div class="ring" style="--p: {{ (score / total * 100)|round }}"><span>{{ score }}/{{ total }}</span></div>
@@ -15,73 +12,35 @@
   </div>
   {% for r in review %}
   <div class="card {{ 'right' if r.ok else 'wrong' }}">
-    <b>{{ loop.index }}. {{ r.q }}</b>
-    <p>Your answer: {{ r.opts[r.chosen] if r.chosen is not none else 'Not answered' }} <span class="tag {{ 'ok' if r.ok else 'bad' }}">{{ 'correct' if r.ok else 'wrong' }}</span></p>
-    {% if not r.ok %}<p>Correct answer: <b>{{ r.opts[r.correct] }}</b></p>{% endif %}
+    {% if r.fill %}<span class="hint">Fill in the blank</span>{% endif %}
+    <p class="q"><span class="qnum">{{ loop.index }}</span><span>{{ (r.q|e)|replace('_____', '<span class="blank"></span>'|safe) }}</span></p>
+    {% for o in r.opts %}{% set k = 'is-correct' if loop.index0 == r.correct else ('is-wrong' if loop.index0 == r.chosen else '') %}
+    <div class="ans {{ k }}"><span class="letter">{{ 'ABCD'[loop.index0] }}</span><span class="grow">{{ o }}</span>
+      {% if k == 'is-correct' %}<span class="tag ok">Correct answer</span>{% elif k == 'is-wrong' %}<span class="tag bad">Your answer</span>{% endif %}</div>{% endfor %}
+    {% if r.chosen is none %}<p class="muted small-t">You did not answer this one.</p>{% endif %}
   </div>{% endfor %}
-
-{% elif questions %}
-  {# ─── Quiz form (answering questions) ─── #}
-  <p class="sub">{% if quiz_type == 'generated' %}Questions generated from your notes. {% endif %}Pick one answer for each.</p>
-  <form method="post" id="quizForm" data-total="{{ questions|length }}">
-    <input type="hidden" name="action" value="submit">
-    <input type="hidden" name="quiz_type" value="{{ quiz_type }}">
-    {% if quiz_data %}<input type="hidden" name="quiz_data" value="{{ quiz_data }}">{% endif %}
-    {% for i, q, opts in questions %}
-    <div class="card">
-      {% if quiz_type == 'general' %}<input type="hidden" name="qid" value="{{ i }}">{% endif %}
-      <p class="q"><span class="qnum">{{ loop.index }}</span>{{ q }}</p>
-      {% for o in opts %}<label class="opt"><input type="radio" name="q{{ i }}" value="{{ loop.index0 }}"><span>{{ o }}</span></label>{% endfor %}
-    </div>{% endfor %}
-    <div class="row"><button class="btn" type="submit">Submit quiz</button><span class="muted" id="answered">0 of {{ questions|length }} answered</span></div>
-  </form>
-
-{% elif setup %}
-  {# ─── Setup mode (choose notes or general quiz) ─── #}
-  {% if all_notes %}
-  <p class="sub">Generate a quiz from your uploaded notes, or take a general knowledge quiz.</p>
-  <form method="post">
-    <input type="hidden" name="action" value="generate">
-    <div class="card note-selector">
-      <div class="note-selector-header" id="noteFilterToggle">
-        {{ icon('file') }}
-        <b>Select notes for the quiz</b>
-        <span class="muted small-t">(using all notes)</span>
-        <span class="toggle-arrow open" id="toggleArrow">▸</span>
-      </div>
-      <div class="note-selector-body open" id="noteFilterBody">
-        <div class="note-selector-actions">
-          <button type="button" class="btn small" id="selectAllNotes">Select all</button>
-          <button type="button" class="btn small danger" id="clearAllNotes">Clear all</button>
-        </div>
-        <div class="note-checkboxes">
-          {% for n in all_notes %}
-          <label class="note-check-item">
-            <input type="checkbox" name="note_ids" value="{{ n.id }}" checked>
-            <span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span>
-            <span class="grow">{{ n.filename }}</span>
-            <span class="muted small-t">{{ n.uploaded_at }}</span>
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    <div class="row" style="margin-bottom:20px">
-      <button class="btn" type="submit">{{ icon('quiz') }} Generate Quiz from Notes</button>
-    </div>
-  </form>
-  <div style="text-align:center">
-    <form method="post" style="display:inline">
-      <input type="hidden" name="action" value="general">
-      <button class="btn small" type="submit" style="background:var(--tint); color:var(--accent)">Or take a General Knowledge Quiz</button>
-    </form>
+{% elif chooser %}
+<p class="sub">Make a 5-question quiz from the notes you choose, or take a general quiz.</p>
+<form method="get" class="card">
+  {% include "_picker.html" %}
+  <div class="row start">
+    {% if all_notes %}<button class="btn" type="submit" name="source" value="notes">Quiz from selected notes</button>{% endif %}
+    <button class="btn {{ 'ghost' if all_notes }}" type="submit" name="source" value="general">General quiz</button>
   </div>
-  {% else %}
-  <p class="sub">No notes uploaded yet. Take a general knowledge quiz, or upload notes in My Notes to generate quizzes from them.</p>
-  <form method="post">
-    <input type="hidden" name="action" value="general">
-    <div class="row"><button class="btn" type="submit">{{ icon('quiz') }} Start General Quiz</button></div>
-  </form>
-  {% endif %}
+  {% if not all_notes %}<p class="muted small-t">Upload notes in My Notes to make quizzes from them.</p>{% endif %}
+</form>
+{% else %}
+<p class="sub">{% if from_notes %}Fill in the blank using your notes. Pick one answer for each.{% else %}Five multiple-choice questions. Pick one answer for each.{% endif %}</p>
+<form method="post" id="quizForm">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="sticky-bar"><span id="answered">0 of {{ questions|length }} answered</span><div class="qbar"><div class="qfill" id="qfill"></div></div></div>
+  {% for i, q, opts in questions %}
+  <div class="card"><input type="hidden" name="qid" value="{{ i }}">
+    {% if from_notes %}<span class="hint">Fill in the blank</span>{% endif %}
+    <p class="q"><span class="qnum">{{ loop.index }}</span><span>{{ (q|e)|replace('_____', '<span class="blank"></span>'|safe) }}</span></p>
+    {% for o in opts %}<label class="opt"><input type="radio" name="q{{ i }}" value="{{ loop.index0 }}"><span class="letter">{{ 'ABCD'[loop.index0] }}</span><span>{{ o }}</span></label>{% endfor %}
+  </div>{% endfor %}
+  <button class="btn" type="submit">Submit quiz</button>
+</form>
 {% endif %}
 {% endblock %}

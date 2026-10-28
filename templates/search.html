@@ -1,40 +1,14 @@
 {% extends "base.html" %}
-{% from "icons.html" import icon %}
 {% block title %}Search{% endblock %}
 {% block content %}
 <h1>Search Notes</h1>
-<form class="card row" method="get" id="searchForm">
-  <input type="text" name="q" value="{{ q }}" placeholder="Enter a topic or keyword" required>
-  <button class="btn" type="submit">Search</button>
+<form class="card" method="get">
+  <div class="row"><input type="text" name="q" value="{{ q }}" placeholder="Enter a topic or keyword" required>
+  <button class="btn" type="submit">Search</button></div>
+  {% include "_picker.html" %}
 </form>
-{% if all_notes %}
-<div class="card note-selector">
-  <div class="note-selector-header" id="noteFilterToggle">
-    {{ icon('file') }}
-    <b>Filter by notes</b>
-    <span class="muted small-t">({% if selected_ids %}{{ selected_ids|length }} of {{ all_notes|length }} selected{% else %}searching all notes{% endif %})</span>
-    <span class="toggle-arrow" id="toggleArrow">▸</span>
-  </div>
-  <div class="note-selector-body" id="noteFilterBody">
-    <div class="note-selector-actions">
-      <button type="button" class="btn small" id="selectAllNotes">Select all</button>
-      <button type="button" class="btn small danger" id="clearAllNotes">Clear all</button>
-    </div>
-    <div class="note-checkboxes">
-      {% for n in all_notes %}
-      <label class="note-check-item">
-        <input type="checkbox" name="note_ids" value="{{ n.id }}" form="searchForm"
-          {% if n.id in selected_ids or not selected_ids %}checked{% endif %}>
-        <span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span>
-        <span class="grow">{{ n.filename }}</span>
-        <span class="muted small-t">{{ n.uploaded_at }}</span>
-      </label>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
-{% if q %}
+{% if no_selection %}<p class="alert error">Select at least one note to search in.</p>
+{% elif q %}
   <h2>{{ results|length }} result(s) for "{{ q }}"</h2>
   {% for r in results %}
   <div class="card"><b><a href="{{ url_for('open_note', nid=r.id) }}">{{ r.file }}</a></b><p>{{ r.snippet }}</p></div>

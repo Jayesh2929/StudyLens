@@ -12,13 +12,22 @@ A simple Flask web app for students: upload notes (PDF/TXT), search them, get to
 `database.db` is created automatically on first run.
 
 ## Features
-Dashboard, My Notes (upload/open/delete), Search Notes, EasyLearn, Quick Quiz (scores saved), My Progress.
+Login / Register (hashed passwords, CSRF protection, login lockout, per-user notes and scores), Dashboard, My Notes (upload/open/delete), Search Notes, EasyLearn, Quick Quiz (scores saved), My Progress.
+
+Supported note types: PDF, DOCX, PPTX, TXT, MD (not scanned PDFs or images).
 
 ## Limitation of EasyLearn
 EasyLearn does not use AI. It ranks sentences from your uploaded notes by keyword matches, so the result is only as good as your notes. Scanned PDFs (images) cannot be read.
 
 ## Files
-- app.py - all routes, database setup and logic
+- app.py - all routes, database setup, login/register and logic
 - templates/ - HTML pages (base.html is the shared layout)
 - static/ - CSS and JavaScript
 - uploads/ - uploaded files are stored here
+
+## Login notes
+- Pages: /login, /register. Every other page requires login; each user only sees their own notes and quiz scores.
+- Passwords need 8+ chars with upper, lower, number and special character.
+- 5 wrong logins for one email lock that email for 5 minutes (in memory, resets on restart).
+- Notes uploaded before this update have no owner and will not show up; re-upload them after logging in.
+- For real deployment set a secret: `set SECRET_KEY=some-long-random-text` (Windows) before `python app.py`.

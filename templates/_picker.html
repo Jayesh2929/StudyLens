@@ -1,0 +1,11 @@
+{% if all_notes %}
+<div class="picker">
+  <input type="hidden" name="picked" value="1">
+  <div class="row"><b>Choose notes</b><span class="grow"></span>
+    <button type="button" class="link-btn" data-pick="all">Select all</button>
+    <button type="button" class="link-btn" data-pick="none">Clear</button></div>
+  <div class="picks">{% for n in all_notes %}
+    <label class="pick"><input type="checkbox" name="note" value="{{ n.id }}" {{ 'checked' if n.id in picked }}>
+      <span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span>{{ n.filename }}</label>{% endfor %}
+  </div>
+</div>{% endif %}

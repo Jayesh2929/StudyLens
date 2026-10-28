@@ -4,10 +4,11 @@
 {% block content %}
 <h1>My Notes</h1>
 <form class="card dropzone" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
   {{ icon('upload') }}
   <p><b>Drop a file here</b> or choose one from your computer</p>
-  <p class="muted small-t">PDF or TXT, up to 10 MB</p>
-  <div class="row center"><input type="file" id="file" name="file" accept=".pdf,.txt" required>
+  <p class="muted small-t">PDF, Word, PowerPoint, TXT or MD, up to 10 MB</p>
+  <div class="row center"><input type="file" id="file" name="file" accept=".pdf,.docx,.pptx,.txt,.md" required>
   <button class="btn" type="submit">Upload</button></div>
 </form>
 <h2>Uploaded notes ({{ notes|length }})</h2>
@@ -20,11 +21,13 @@
       <td><span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span> {{ n.filename }}</td><td>{{ n.uploaded_at }}</td>
       <td class="row">
         <a class="btn small" href="{{ url_for('open_note', nid=n.id) }}">Open</a>
+        <a class="btn small ghost" href="{{ url_for('quiz', source='notes', note=n.id) }}">Quiz</a>
         <form action="{{ url_for('delete_note', nid=n.id) }}" method="post" data-confirm="Delete this note?">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
           <button class="btn small danger" type="submit">Delete</button></form>
       </td>
     </tr>{% endfor %}
   </table>
 </div>
-{% else %}<div class="card empty">{{ icon('file') }}<p>No notes yet. Upload your first PDF or TXT file above.</p></div>{% endif %}
+{% else %}<div class="card empty">{{ icon('file') }}<p>No notes yet. Upload your first file above.</p></div>{% endif %}
 {% endblock %}

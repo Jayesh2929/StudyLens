@@ -23,16 +23,13 @@
       <a href="{{ url_for('quiz') }}" class="{{ 'active' if page=='quiz' }}">{{ icon('quiz') }}Quick Quiz</a>
       <a href="{{ url_for('progress') }}" class="{{ 'active' if page=='progress' }}">{{ icon('chart') }}My Progress</a>
     </nav>
-    <div class="sidebar-footer">
-      {% if session.get('user_name') %}
-      <div class="user-info">
-        <div class="user-avatar">{{ session['user_name'][0]|upper }}</div>
-        <span class="user-name">{{ session['user_name'] }}</span>
-      </div>
-      <a href="{{ url_for('logout') }}" class="logout-btn" title="Sign out">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </a>
-      {% endif %}
+    <div class="user-box">
+      <span class="avatar" aria-hidden="true">{{ (session.uname or '?')[0]|upper }}</span>
+      <div class="grow"><b>{{ session.uname }}</b><span class="muted small-t">Signed in</span></div>
+      <form action="{{ url_for('logout') }}" method="post" class="logout-form">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="icon-btn" type="submit" title="Log out" aria-label="Log out">{{ icon('logout') }}</button>
+      </form>
     </div>
   </aside>
   <main class="content">

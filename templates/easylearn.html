@@ -3,49 +3,28 @@
 {% block title %}EasyLearn{% endblock %}
 {% block content %}
 <h1>EasyLearn</h1>
-<form class="card row" method="get" id="easylearnForm">
-  <input type="text" name="topic" value="{{ topic }}" placeholder="Enter a topic, e.g. normalization" required>
-  <button class="btn" type="submit">Generate</button>
+<p class="sub">Type a topic and get a revision pack built from your notes.</p>
+<form class="card" method="get">
+  <div class="row"><input type="text" name="topic" value="{{ topic }}" placeholder="Enter a topic, e.g. normalization" required>
+  <button class="btn" type="submit">Generate</button></div>
+  {% include "_picker.html" %}
 </form>
-{% if all_notes %}
-<div class="card note-selector">
-  <div class="note-selector-header" id="noteFilterToggle">
-    {{ icon('file') }}
-    <b>Select notes to use</b>
-    <span class="muted small-t">({% if selected_ids %}{{ selected_ids|length }} selected{% else %}using all notes{% endif %})</span>
-    <span class="toggle-arrow" id="toggleArrow">▸</span>
-  </div>
-  <div class="note-selector-body" id="noteFilterBody">
-    <div class="note-selector-actions">
-      <button type="button" class="btn small" id="selectAllNotes">Select all</button>
-      <button type="button" class="btn small danger" id="clearAllNotes">Clear all</button>
-    </div>
-    <div class="note-checkboxes">
-      {% for n in all_notes %}
-      <label class="note-check-item">
-        <input type="checkbox" name="note_ids" value="{{ n.id }}" form="easylearnForm"
-          {% if n.id in selected_ids or not selected_ids %}checked{% endif %}>
-        <span class="badge">{{ n.filename.rsplit('.',1)[-1]|upper }}</span>
-        <span class="grow">{{ n.filename }}</span>
-        <span class="muted small-t">{{ n.uploaded_at }}</span>
-      </label>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
-<p class="note">Note: EasyLearn uses simple text processing, not AI. It picks the most relevant sentences from your uploaded notes, so results depend on how well your notes cover the topic.</p>
-{% if out %}
+{% if no_selection %}<p class="alert error">Select at least one note to use.</p>
+{% elif out %}
   {% if out.found %}
-  <div class="card"><h2>Simple explanation</h2><p>{{ out.explanation }}</p></div>
-  <div class="card"><h2>Short summary</h2><p>{{ out.summary }}</p></div>
-  <div class="card"><h2>Important points for revision</h2><ul>{% for p in out.points %}<li>{{ p }}</li>{% endfor %}</ul></div>
-  <div class="card"><h2>5-mark exam answer</h2>
-    <p>{{ out.answer.intro }}</p><ul>{% for p in out.answer.body %}<li>{{ p }}</li>{% endfor %}</ul>
-    <p>{{ out.answer.conclusion }}</p></div>
-  <p class="muted">Sources: {{ out.sources|join(', ') }}</p>
+  <div class="result-head"><h2>{{ topic }}</h2>
+    <span class="muted small-t">{{ out.count }} matching sentence{{ 's' if out.count != 1 }} in {{ out.sources|join(', ') }}</span></div>
+  <div class="card sec"><div class="sec-h"><span class="chip">{{ icon('bulb') }}</span>Simple explanation</div><p class="lead">{{ out.explanation }}</p></div>
+  <div class="card sec"><div class="sec-h"><span class="chip">{{ icon('file') }}</span>Short summary</div><p class="lead">{{ out.summary }}</p></div>
+  <div class="card sec"><div class="sec-h"><span class="chip">{{ icon('check') }}</span>Important points for revision</div>
+    <ul class="points">{% for p in out.points %}<li>{{ p }}</li>{% endfor %}</ul></div>
+  <div class="card sec paper"><div class="sec-h"><span class="chip">{{ icon('quiz') }}</span>5-mark exam answer</div>
+    <h3>Introduction</h3><p>{{ out.answer.intro }}</p>
+    {% if out.answer.body %}<h3>Main points</h3><ol>{% for p in out.answer.body %}<li>{{ p }}</li>{% endfor %}</ol>{% endif %}
+    <h3>Conclusion</h3><p>{{ out.answer.conclusion }}</p></div>
   {% else %}
-  <p class="card muted">Nothing found for "{{ topic }}". Upload notes that cover this topic in My Notes, or try another keyword.</p>
+  <div class="card empty">{{ icon('search') }}<p>Nothing found for "{{ topic }}". Try another keyword or choose different notes.</p></div>
   {% endif %}
 {% endif %}
+<p class="note">EasyLearn uses simple text processing, not AI. It picks the most relevant sentences from the notes you select, so results depend on how well your notes cover the topic.</p>
 {% endblock %}

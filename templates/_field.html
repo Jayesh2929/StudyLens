@@ -1,0 +1,18 @@
+{% from "icons.html" import icon %}
+{# field(id, label, type, icon_name, value, error, autocomplete, placeholder, extra) #}
+{% macro field(id, label, type, ico, value='', error='', autocomplete='', placeholder='', toggle=False) -%}
+<div class="field{{ ' has-error' if error }}">
+  <label for="{{ id }}">{{ label }}</label>
+  <div class="input-wrap">
+    <span class="lead-ico">{{ icon(ico) }}</span>
+    <input id="{{ id }}" name="{{ id }}" type="{{ type }}" value="{{ value }}" placeholder="{{ placeholder }}"
+           autocomplete="{{ autocomplete }}" required aria-describedby="{{ id }}-err"
+           {% if error %}aria-invalid="true"{% endif %}
+           {% if type in ('email',) %}autocapitalize="none" spellcheck="false" maxlength="254"{% endif %}>
+    {% if toggle %}<button type="button" class="toggle-pw" data-target="{{ id }}" aria-label="Show password" aria-pressed="false">
+      <span class="on">{{ icon('eye') }}</span><span class="off">{{ icon('eyeoff') }}</span></button>{% endif %}
+  </div>
+  <p class="field-err" id="{{ id }}-err" role="alert">{{ error }}</p>
+  {{ caller() if caller }}
+</div>
+{%- endmacro %}

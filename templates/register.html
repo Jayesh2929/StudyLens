@@ -1,0 +1,29 @@
+{% extends "auth_base.html" %}
+{% from "icons.html" import icon %}
+{% from "_field.html" import field with context %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<h1>Create your account</h1>
+<p class="sub">Free and takes less than a minute.</p>
+
+<form method="post" id="registerForm" class="auth-form" novalidate>
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {{ field('name', 'Full name', 'text', 'user', form.name, errors.name, 'name', 'Your name') }}
+  {{ field('email', 'Email address', 'email', 'mail', form.email, errors.email, 'email', 'you@example.com') }}
+  {% call field('password', 'Password', 'password', 'lock', '', errors.password, 'new-password', 'Create a password', toggle=True) %}
+    <div class="meter" aria-hidden="true"><span id="meterBar"></span></div>
+    <ul class="rules" id="rules">
+      <li data-rule="len">At least 8 characters</li>
+      <li data-rule="lower">A lowercase letter</li>
+      <li data-rule="upper">An uppercase letter</li>
+      <li data-rule="num">A number</li>
+      <li data-rule="sym">A special character</li>
+    </ul>
+  {% endcall %}
+  <p class="caps-warn" id="capsWarn" hidden>{{ icon('alert') }}Caps Lock is on</p>
+  {{ field('confirm', 'Confirm password', 'password', 'lock', '', errors.confirm, 'new-password', 'Re-enter your password') }}
+  <button class="btn block" type="submit" id="submitBtn"><span class="btn-label">Create account</span><span class="spinner" aria-hidden="true"></span></button>
+</form>
+
+<p class="switch">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+{% endblock %}
